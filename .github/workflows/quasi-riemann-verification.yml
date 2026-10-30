@@ -1,0 +1,37 @@
+name: Pinned quasi-Riemann verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [verification/quasi-riemann-20261008]
+    paths: ['.github/workflows/quasi-riemann-verification.yml', 'scripts/verification/**']
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/quasi-riemann-verification.yml', 'scripts/verification/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quasi-riemann-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - name: Check out verification harness
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Verify fixed source snapshot
+        run: bash scripts/verification/quasi-riemann.sh
+      - name: Retain evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: quasi-riemann-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: verification-evidence/
+          if-no-files-found: warn
+          retention-days: 30
